@@ -133,8 +133,10 @@ Vector3D EnvironmentLight::sample_L(const Vector3D p, Vector3D* wi,
     *distToLight = INF_D;
     *pdf = 1.0 / (4.0 * PI);
 
+    Vector2D theta_phi = dir_to_theta_phi(*wi);
+    Vector2D x_y = theta_phi_to_xy(theta_phi);
 
-    return Vector3D();
+    return bilerp(x_y);
 }
 
 Vector3D EnvironmentLight::sample_dir(const Ray& r) const {
