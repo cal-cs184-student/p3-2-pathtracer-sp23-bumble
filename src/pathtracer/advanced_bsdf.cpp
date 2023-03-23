@@ -136,7 +136,7 @@ namespace CGL {
 
         // TODO Project 3-2: Part 1
         // Implement reflection of wo about normal (0,0,1) and store result in wi.
-
+      wi = new Vector3D(-wo.x, wo.y, wo.z);
 
     }
 
