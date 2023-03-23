@@ -22,7 +22,11 @@ namespace CGL {
 
         // TODO Project 3-2: Part 1
         // Implement MirrorBSDF
-        return Vector3D();
+
+        reflect(wo, wi);
+        *pdf = 1.;
+
+        return reflectance / abs_cos_theta(*wi);
     }
 
     void MirrorBSDF::render_debugger_node()
@@ -92,7 +96,14 @@ namespace CGL {
     Vector3D RefractionBSDF::sample_f(const Vector3D wo, Vector3D* wi, double* pdf) {
         // TODO Project 3-2: Part 1
         // Implement RefractionBSDF
-        return Vector3D();
+        bool didRefract = refract(wo, wi, this->ior);
+        if (didRefract) {
+            double eta = wo.z > 0 ? 1 / ior : ior;
+            *pdf = 1;
+            return transmittance / abs_cos_theta(*wi) / pow(eta, 2);
+        } else {
+            return Vector3D(0.);
+        }
     }
 
     void RefractionBSDF::render_debugger_node()
@@ -118,7 +129,24 @@ namespace CGL {
 
         // compute Fresnel coefficient and use it as the probability of reflection
         // - Fundamentals of Computer Graphics page 305
-        return Vector3D();
+        bool didRefract = refract(wo, wi, this->ior);
+        if (didRefract) {
+            double r0 = pow((1. - this->ior) / (1. + this->ior), 2);
+            double r = r0 + (1 - r0) * pow(1 - abs_cos_theta(wo), 5);
+            if (coin_flip(r)) {
+                reflect(wo, wi);
+                *pdf = r;
+                return r * reflectance / abs_cos_theta(*wi);
+            } else {
+                *pdf = 1 - r;
+                double eta = wo.z > 0 ? 1 / ior : ior;
+                return (1 - r) * transmittance / abs_cos_theta(*wi) / pow(eta, 2);
+            }
+        } else {
+            reflect(wo, wi);
+            *pdf = 1;
+            return reflectance / abs_cos_theta(*wi);
+        }
     }
 
     void GlassBSDF::render_debugger_node()
@@ -136,8 +164,7 @@ namespace CGL {
 
         // TODO Project 3-2: Part 1
         // Implement reflection of wo about normal (0,0,1) and store result in wi.
-
-
+        *wi = Vector3D(-wo.x, -wo.y, wo.z);
     }
 
     bool BSDF::refract(const Vector3D wo, Vector3D* wi, double ior) {
@@ -148,8 +175,15 @@ namespace CGL {
         // and true otherwise. When dot(wo,n) is positive, then wo corresponds to a
         // ray entering the surface through vacuum.
 
-        return true;
+        double eta = wo.z > 0 ? 1 / ior : ior;
+        double z_det = 1 - eta * eta * (1 - pow(cos_theta(wo), 2));
 
+        if (z_det < 0)
+            return false;
+
+        int8_t sign = wo.z > 0 ? -1 : 1;
+        *wi = Vector3D(-wo.x * eta, -wo.y * eta, sign * sqrt(z_det));
+        return true;
     }
 
 } // namespace CGL
